@@ -62,6 +62,39 @@ pytest tests/ -v
 
 Before deployment, run the same tests against Studio Mode to exercise real multi-validator behavior. The repository intentionally keeps consensus tests separate from any frontend or product flow so the contract can be reused by governance, compliance, research, and oracle-like applications.
 
+## Deployment and interaction
+
+The repository includes a CLI deployment wrapper and a Python SDK interaction script. Install the GenLayer CLI, select a network, and deploy:
+
+```bash
+npm install -g genlayer
+./scripts/deploy.sh localnet
+# or: ./scripts/deploy.sh studionet
+```
+
+Save the deployed address, then install the SDK and export the address:
+
+```bash
+pip install genlayer-py
+export GENLAYER_CONTRACT_ADDRESS=0xYourDeployedContractAddress
+export GENLAYER_NETWORK=localnet
+```
+
+Register a claim, resolve it through validator consensus, and read the accepted result:
+
+```bash
+python scripts/interact.py register \
+  --claim-id policy-2026 \
+  --statement "The organization published a 2026 transparency report." \
+  --source-url https://example.org/reports \
+  --criteria "Support only when an official source clearly identifies a 2026 transparency report. Use uncertain for missing, stale, or contradictory evidence."
+
+python scripts/interact.py resolve --claim-id policy-2026
+python scripts/interact.py read --claim-id policy-2026
+```
+
+For writes on fee-charging Consensus v0.6 networks, use the network's measured fee profile and pass the resulting `distribution` and `feeValue` to `write_contract`. The wrapper is intentionally conservative and is best suited to localnet or SDK versions where fee-less local calls are enabled; the official deployment docs describe fee estimation for Studionet, Studio-dev, and Bradbury.
+
 ## Safety and limitations
 
 This is an evidence-resolution primitive, not a guarantee of truth. Public sources can be wrong, unavailable, manipulated, or updated after resolution. Callers should choose authoritative sources and criteria, treat `uncertain` as a first-class outcome, and avoid using a single resolution for irreversible high-value actions without an appeal or human review process. The contract does not make financial, legal, medical, or identity determinations.
